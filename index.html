@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#170b08">
+<meta name="description" content="Subsolo: Tetris com gemas no modo escavação. Cave até onde a terra deixar e entre no ranking.">
+<title>Subsolo — escavação infinita</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛏️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Dirt&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header class="hud">
+    <div class="next"><span class="lbl">Próxima</span><canvas id="nextCv" width="92" height="92"></canvas></div>
+    <div class="stat"><span class="lbl">Pontos</span><b id="score">0</b></div>
+    <div class="stat"><span class="lbl">Profundidade</span><b id="depth">0 m</b></div>
+    <div class="stat lvl"><span class="lbl">Nível</span><b id="level">1</b></div>
+    <div class="btns"><button id="btnPause" aria-label="Pausar">❚❚</button><button id="btnMute" aria-label="Som">♪</button></div>
+  </header>
+  <div class="strata"><span id="zone">Terra Vermelha</span><span id="cascade"></span></div>
+  <main class="stage" id="stage"><canvas id="board" aria-label="Tabuleiro do jogo"></canvas></main>
+  <nav class="controls" id="controls">
+    <button data-act="left" aria-label="Esquerda">◀</button>
+    <button data-act="right" aria-label="Direita">▶</button>
+    <button data-act="rot" aria-label="Girar">⟳</button>
+    <button data-act="cyc" aria-label="Trocar cores">◆</button>
+    <button data-act="down" aria-label="Acelerar">▼</button>
+    <button data-act="drop" class="drop" aria-label="Soltar">⤓</button>
+  </nav>
+  <p class="keys"><kbd>←</kbd><kbd>→</kbd> mover &nbsp; <kbd>↑</kbd> girar &nbsp; <kbd>C</kbd> trocar cores &nbsp; <kbd>↓</kbd> acelerar &nbsp; <kbd>Espaço</kbd> soltar &nbsp; <kbd>P</kbd> pausa &nbsp; arraste gemas pousadas para trocar</p>
+</div>
+
+<!-- Início -->
+<div class="ov show" id="ovStart">
+  <div class="card">
+    <h1>Subsolo</h1>
+    <p class="tag">Cave até onde a terra deixar.</p>
+    <details class="how" id="howTo">
+      <summary>Como jogar</summary>
+      <div class="body">
+        <p>As peças caem como no Tetris. Cada bloco é uma gema.</p>
+        <p>Só a cor importa: junte <em>3 ou mais</em> gemas iguais em linha ou coluna para quebrar.</p>
+        <p>Quanto maior o grupo, mais forte o golpe na rocha encostada: 3 gemas tiram 1 ponto de dureza, 4 tiram 2, 5 tiram 3.</p>
+        <p>As bolinhas na rocha mostram a dureza que falta. Terra 1, argila 2, pedra 3, granito 4, basalto 5.</p>
+        <p>Arraste uma gema pousada para trocar com a vizinha, se formar grupo. 4 em linha vira <em>bomba</em>, L ou T vira <em>estrela</em>, 5 vira <em>hipercubo</em>.</p>
+        <p>A terra sobe do fundo. Encostou no teto, você foi soterrado.</p>
+      </div>
+    </details>
+    <section class="acct" id="acct"></section>
+    <div class="actions">
+      <button class="go" id="btnStart">Começar a cavar</button>
+    </div>
+    <button class="link" id="btnRankStart">Ver ranking</button>
+    <div class="best" id="bestStart"></div>
+  </div>
+</div>
+
+<!-- Pausa -->
+<div class="ov" id="ovPause">
+  <div class="card">
+    <h2 style="color:var(--lamp)">Pausa</h2>
+    <p class="why">A picareta está te esperando.</p>
+    <div class="actions">
+      <button class="go" id="btnResume">Voltar a cavar</button>
+      <button class="ghost" id="btnQuit">Sair para o menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fim de jogo -->
+<div class="ov" id="ovOver">
+  <div class="card">
+    <h2>Soterrado</h2>
+    <p class="why" id="overWhy"></p>
+    <p class="newrec" id="newRec" hidden>Novo recorde</p>
+    <div class="res">
+      <div><span>Pontos</span><b id="oScore">0</b></div>
+      <div><span>Profundidade</span><b id="oDepth">0 m</b></div>
+      <div><span>Nível</span><b id="oLevel">1</b></div>
+      <div><span>Maior cascata</span><b id="oCasc">x1</b></div>
+    </div>
+    <div class="orelist" id="oOres"></div>
+    <p class="submit" id="submitMsg"></p>
+    <div class="actions">
+      <button class="go" id="btnAgain">Cavar de novo</button>
+      <button class="ghost" id="btnRankOver">Ranking</button>
+    </div>
+    <button class="link" id="btnMenu">Voltar ao menu</button>
+  </div>
+</div>
+
+<!-- Ranking -->
+<div class="ov" id="ovRank">
+  <div class="card rank">
+    <h2>Ranking</h2>
+    <div class="seg" id="segModo"><button data-v="pontos" class="on">Pontos</button><button data-v="profundidade">Profundidade</button></div>
+    <div class="seg" id="segPer"><button data-v="geral" class="on">Todos os tempos</button><button data-v="semana">Últimos 7 dias</button></div>
+    <ol class="rlist" id="rankList"></ol>
+    <p class="rme" id="rankMe"></p>
+    <button class="go small" id="btnRankClose">Fechar</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/game.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
