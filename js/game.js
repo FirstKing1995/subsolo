@@ -711,7 +711,7 @@ document.addEventListener('keydown',e=>{
   if(KEYMAP[k])press(KEYMAP[k]);
 });
 document.addEventListener('keyup',e=>{if(KEYMAP[e.key])release(KEYMAP[e.key]);});
-document.querySelectorAll('#controls button').forEach(b=>{
+document.querySelectorAll('#controls button, #quick button').forEach(b=>{
   const a=b.dataset.act;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(S.state==='paused')return;press(a);});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>release(a)));

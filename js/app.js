@@ -8,6 +8,7 @@ const ORES = { carvao: ['Carvão', '#6a6a6a'], ferro: ['Ferro', '#d9a88c'], tnt:
   topazio: ['Topázio', '#39e6ff'], diamante: ['Diamante', '#eafcff'], reliquia: ['Relíquia', '#efe0bb'] };
 
 let runId = null;          // partida registrada no servidor
+let pacoteAtual = null;    // última partida aguardando envio
 let authMode = 'login';
 let rankFrom = 'ovStart';  // tela para onde o ranking volta
 const rank = { modo: 'pontos', periodo: 'geral' };
@@ -27,6 +28,12 @@ function renderAcct() {
   const el = $('acct');
   $('btnRankStart').hidden = !Api.ativo;
   $('bestStart').textContent = bestLine();
+  const fila = Api.ativo ? Api.fila().length : 0;
+  const aviso = $('filaAviso');
+  aviso.hidden = !fila;
+  if (fila) aviso.textContent = fila === 1
+    ? '1 partida esperando conexão para entrar no ranking. Eu tento de novo sozinho.'
+    : fila + ' partidas esperando conexão para entrar no ranking. Eu tento de novo sozinho.';
   if (!Api.ativo) { el.innerHTML = ''; return; }
 
   if (Api.user) {
@@ -79,7 +86,10 @@ function startGame() {
   hideAll();
   runId = null;
   Game.start();
-  if (Api.ativo && Api.user) Api.iniciarPartida().then(id => { runId = id; }).catch(() => { runId = null; });
+  if (Api.ativo && Api.user) {
+    Api.iniciarPartida().then(id => { runId = id; }).catch(() => { runId = null; });
+    Api.processarFila().then(n => { if (n) renderAcct(); }).catch(() => {});
+  }
 }
 
 Game.onPause = paused => { if (paused) show('ovPause'); else hideAll(); };
@@ -101,23 +111,38 @@ Game.onOver = async stats => {
   show('ovOver');
 
   if (!Api.ativo) { msg.textContent = ''; return; }
-  if (!Api.user) {
-    msg.innerHTML = 'Crie uma conta na tela inicial para essa pontuação contar no ranking.';
-    return;
-  }
-  if (!runId) { msg.className = 'submit bad'; msg.textContent = 'Essa partida não foi registrada no servidor (sem conexão no início). Pontos salvos só neste aparelho.'; return; }
+  if (!Api.user) { msg.textContent = 'Crie uma conta na tela inicial para essa pontuação contar no ranking.'; return; }
+
+  pacoteAtual = Api.pacote(runId, stats);
+  runId = null;
+  enviarPacote();
+};
+
+async function enviarPacote() {
+  const msg = $('submitMsg');
+  if (!pacoteAtual) return;
+  msg.className = 'submit';
   msg.textContent = 'Enviando pontuação…';
   try {
-    const r = await Api.enviar(runId, stats);
-    runId = null;
+    const r = await Api.enviar(pacoteAtual);
+    pacoteAtual = null;
     msg.textContent = (r.recorde ? 'Novo recorde da conta! ' : 'Pontuação registrada. ') +
-      (r.posicao ? 'Você está em ' + r.posicao + 'º no ranking geral.' : '');
+      (r.posicao ? 'Você está em ' + r.posicao + 'º no ranking geral.' : '') +
+      (r.validacao === 'estimada' ? ' (enviada depois, com o tempo estimado)' : '');
     if (r.recorde) $('newRec').hidden = false;
   } catch (ex) {
     msg.className = 'submit bad';
-    msg.textContent = ex.message;
+    if (ex.pendente) {
+      msg.innerHTML = esc(ex.message) + ' A partida ficou salva e sobe sozinha quando a conexão voltar. ' +
+        '<button class="link" id="btnRetry">Tentar agora</button>';
+      const b = $('btnRetry'); if (b) b.onclick = enviarPacote;
+    } else {
+      msg.textContent = ex.message;
+      pacoteAtual = null;
+    }
   }
-};
+  renderAcct();
+}
 
 /* ---------- ranking ---------- */
 async function openRank(from) {
@@ -174,5 +199,40 @@ let viu = false;
 try { viu = localStorage.getItem('subsolo-viu-tutorial') === '1'; } catch (e) {}
 $('howTo').open = !viu;
 renderAcct();
-if (Api.ativo && Api.token) Api.atualizar().then(renderAcct).catch(renderAcct);
+if (Api.ativo && Api.token) {
+  Api.atualizar().then(renderAcct).catch(renderAcct);
+  Api.processarFila().then(n => { if (n) renderAcct(); }).catch(() => {});
+}
+window.addEventListener('online', () => Api.processarFila().then(n => { if (n) renderAcct(); }).catch(() => {}));
+
+/* ---------- instalar no celular ---------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+let promptInstalar = null;
+const instalado = () => window.matchMedia('(display-mode: standalone)').matches ||
+  window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  promptInstalar = e;
+  $('btnInstall').hidden = instalado();
+});
+window.addEventListener('appinstalled', () => { promptInstalar = null; $('btnInstall').hidden = true; $('instalarDica').hidden = true; });
+$('btnInstall').onclick = async () => {
+  if (!promptInstalar) return;
+  $('btnInstall').hidden = true;
+  promptInstalar.prompt();
+  try { await promptInstalar.userChoice; } catch (e) {}
+  promptInstalar = null;
+};
+// iPhone não tem o prompt automático: mostra o caminho manual
+(() => {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && !instalado()) {
+    const dica = $('instalarDica');
+    dica.hidden = false;
+    dica.textContent = 'No iPhone dá para instalar: toque em Compartilhar e depois em Adicionar à Tela de Início.';
+  }
+})();
 })();
