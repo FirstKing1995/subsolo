@@ -10,6 +10,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik+Dirt&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Subsolo">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -23,13 +28,19 @@
   </header>
   <div class="strata"><span id="zone">Terra Vermelha</span><span id="cascade"></span></div>
   <main class="stage" id="stage"><canvas id="board" aria-label="Tabuleiro do jogo"></canvas></main>
+  <div class="quick" id="quick">
+    <button data-act="cyc"><span>◆</span> trocar cores</button>
+    <button data-act="drop" class="drop"><span>⤓</span> soltar</button>
+  </div>
   <nav class="controls" id="controls">
-    <button data-act="left" aria-label="Esquerda">◀</button>
-    <button data-act="right" aria-label="Direita">▶</button>
-    <button data-act="rot" aria-label="Girar">⟳</button>
-    <button data-act="cyc" aria-label="Trocar cores">◆</button>
-    <button data-act="down" aria-label="Acelerar">▼</button>
-    <button data-act="drop" class="drop" aria-label="Soltar">⤓</button>
+    <div class="pad">
+      <button data-act="left" aria-label="Esquerda">◀</button>
+      <button data-act="right" aria-label="Direita">▶</button>
+    </div>
+    <div class="pad">
+      <button data-act="rot" aria-label="Girar">⟳</button>
+      <button data-act="down" aria-label="Descer">▼</button>
+    </div>
   </nav>
   <p class="keys"><kbd>←</kbd><kbd>→</kbd> mover &nbsp; <kbd>↑</kbd> girar &nbsp; <kbd>C</kbd> trocar cores &nbsp; <kbd>↓</kbd> acelerar &nbsp; <kbd>Espaço</kbd> soltar &nbsp; <kbd>P</kbd> pausa &nbsp; arraste gemas pousadas para trocar</p>
 </div>
@@ -54,7 +65,12 @@
     <div class="actions">
       <button class="go" id="btnStart">Começar a cavar</button>
     </div>
-    <button class="link" id="btnRankStart">Ver ranking</button>
+    <div class="actions">
+      <button class="link" id="btnRankStart">Ver ranking</button>
+      <button class="link" id="btnInstall" hidden>Instalar no celular</button>
+    </div>
+    <p class="note" id="instalarDica" hidden></p>
+    <p class="note" id="filaAviso" hidden></p>
     <div class="best" id="bestStart"></div>
   </div>
 </div>
